@@ -37,6 +37,20 @@ Please provide a clear, accurate answer based solely on the information in the c
         "supports_chat": True,
         "supports_extraction": False,
     },
+    "data_analyzer": {
+        "id": "data_analyzer",
+        "name": "Data Analyzer",
+        "description": "Ask natural language questions about your database tables. Generates SQL queries automatically and returns results with visualizations.",
+        "icon": "analytics",
+        "category": "data",
+        "requires_embedding": False,
+        "queryable_sources_only": True,
+        "default_fields": [],
+        "prompt_template": "",
+        "output_schema": None,
+        "supports_chat": True,
+        "supports_extraction": False,
+    },
 }
 
 FIELD_TYPES = {

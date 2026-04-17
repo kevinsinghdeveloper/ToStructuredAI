@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import apiService from '../../utils/api.service';
-import { Document, ModelConfig, RAGPipeline, Query } from '../../types';
+import { Document, ModelConfig, RAGPipeline, Query, DatabaseConnection, Source } from '../../types';
 import { useAuth } from './AuthContext';
 
 interface DocumentContextType {
@@ -37,6 +37,16 @@ interface DocumentContextType {
   queriesError: string | null;
   askQuestion: (pipelineId: string, question: string) => Promise<Query>;
   fetchQueries: (pipelineId?: string) => Promise<void>;
+
+  // Database Connections
+  connections: DatabaseConnection[];
+  connectionsLoading: boolean;
+  fetchConnections: () => Promise<void>;
+
+  // Sources
+  sources: Source[];
+  sourcesLoading: boolean;
+  fetchSources: () => Promise<void>;
 }
 
 const DocumentContext = createContext<DocumentContextType | undefined>(undefined);
@@ -76,11 +86,21 @@ export const DocumentContextProvider: React.FC<DocumentContextProviderProps> = (
   const [queriesLoading, setQueriesLoading] = useState(false);
   const [queriesError, setQueriesError] = useState<string | null>(null);
 
+  // Connections state
+  const [connections, setConnections] = useState<DatabaseConnection[]>([]);
+  const [connectionsLoading, setConnectionsLoading] = useState(false);
+
+  // Sources state
+  const [sources, setSources] = useState<Source[]>([]);
+  const [sourcesLoading, setSourcesLoading] = useState(false);
+
   useEffect(() => {
     if (isAuthenticated) {
       fetchDocuments();
       fetchModels();
       fetchPipelines();
+      fetchConnections();
+      fetchSources();
     }
   }, [isAuthenticated]);
 
@@ -301,6 +321,32 @@ export const DocumentContextProvider: React.FC<DocumentContextProviderProps> = (
     }
   };
 
+  // Connection methods
+  const fetchConnections = async () => {
+    try {
+      setConnectionsLoading(true);
+      const result = await apiService.getConnections();
+      setConnections(result.data || result);
+    } catch {
+      // Silent fail — connections are optional
+    } finally {
+      setConnectionsLoading(false);
+    }
+  };
+
+  // Source methods
+  const fetchSources = async () => {
+    try {
+      setSourcesLoading(true);
+      const result = await apiService.getSources();
+      setSources(result.data || result);
+    } catch {
+      // Silent fail — sources are optional
+    } finally {
+      setSourcesLoading(false);
+    }
+  };
+
   const value: DocumentContextType = {
     documents,
     documentsLoading,
@@ -328,6 +374,12 @@ export const DocumentContextProvider: React.FC<DocumentContextProviderProps> = (
     queriesError,
     askQuestion,
     fetchQueries,
+    connections,
+    connectionsLoading,
+    fetchConnections,
+    sources,
+    sourcesLoading,
+    fetchSources,
   };
 
   return <DocumentContext.Provider value={value}>{children}</DocumentContext.Provider>;

@@ -2,7 +2,7 @@
 # API Gateway + DynamoDB + Lambda Functions
 
 # ============================================================
-# DynamoDB Tables (16 total)
+# DynamoDB Tables (20 total)
 # ============================================================
 
 # --- KEPT Tables (7) ---
@@ -551,6 +551,127 @@ resource "aws_dynamodb_table" "plan_models" {
   }
 
   tags = merge(local.common_tags, { Name = "${local.resource_prefix}-plan-models" })
+}
+
+# --- External Database Connections & Sources (4) ---
+
+resource "aws_dynamodb_table" "database_connections" {
+  name         = "${local.resource_prefix}-database-connections"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "user_id"
+  range_key    = "id"
+
+  attribute {
+    name = "user_id"
+    type = "S"
+  }
+  attribute {
+    name = "id"
+    type = "S"
+  }
+
+  point_in_time_recovery {
+    enabled = true
+  }
+
+  tags = merge(local.common_tags, { Name = "${local.resource_prefix}-database-connections" })
+}
+
+resource "aws_dynamodb_table" "sources" {
+  name         = "${local.resource_prefix}-sources"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "user_id"
+  range_key    = "id"
+
+  attribute {
+    name = "user_id"
+    type = "S"
+  }
+  attribute {
+    name = "id"
+    type = "S"
+  }
+  attribute {
+    name = "connection_id"
+    type = "S"
+  }
+  attribute {
+    name = "source_type"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name            = "ConnectionIndex"
+    hash_key        = "connection_id"
+    projection_type = "ALL"
+  }
+
+  global_secondary_index {
+    name            = "TypeIndex"
+    hash_key        = "source_type"
+    range_key       = "id"
+    projection_type = "ALL"
+  }
+
+  point_in_time_recovery {
+    enabled = true
+  }
+
+  tags = merge(local.common_tags, { Name = "${local.resource_prefix}-sources" })
+}
+
+resource "aws_dynamodb_table" "pipeline_sources" {
+  name         = "${local.resource_prefix}-pipeline-sources"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "pipeline_id"
+  range_key    = "source_id"
+
+  attribute {
+    name = "pipeline_id"
+    type = "S"
+  }
+  attribute {
+    name = "source_id"
+    type = "S"
+  }
+
+  point_in_time_recovery {
+    enabled = true
+  }
+
+  tags = merge(local.common_tags, { Name = "${local.resource_prefix}-pipeline-sources" })
+}
+
+resource "aws_dynamodb_table" "temp_data_tables" {
+  name         = "${local.resource_prefix}-temp-data-tables"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "pipeline_id"
+  range_key    = "id"
+
+  attribute {
+    name = "pipeline_id"
+    type = "S"
+  }
+  attribute {
+    name = "id"
+    type = "S"
+  }
+  attribute {
+    name = "source_id"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name            = "SourceIndex"
+    hash_key        = "source_id"
+    projection_type = "ALL"
+  }
+
+  point_in_time_recovery {
+    enabled = true
+  }
+
+  tags = merge(local.common_tags, { Name = "${local.resource_prefix}-temp-data-tables" })
 }
 
 # ============================================================

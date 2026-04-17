@@ -207,6 +207,7 @@ export interface RAGPipeline {
   modelId: string;
   embeddingModelId: string;
   documentIds: string[];
+  sourceIds?: string[];
   pipelineType?: string;
   config?: Record<string, any>;
   promptTemplate?: string;
@@ -241,6 +242,61 @@ export enum OutputFormat {
   XML = 'XML',
 }
 
+// ==================== Database Connection Types ====================
+export interface DatabaseConnection {
+  id: string;
+  userId: string;
+  name: string;
+  dbType: string;
+  host?: string;
+  port?: number;
+  databaseName?: string;
+  username?: string;
+  sslEnabled: boolean;
+  schemaName: string;
+  status: 'untested' | 'connected' | 'failed';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ConnectionTable {
+  name: string;
+  schema: string;
+}
+
+export interface ConnectionTableSchema {
+  table_name: string;
+  columns: ColumnSchema[];
+  row_count: number;
+}
+
+export interface ColumnSchema {
+  name: string;
+  type: string;
+  nullable: boolean;
+  primary_key: boolean;
+  default?: string | null;
+  description?: string;
+}
+
+// ==================== Source Types ====================
+export interface Source {
+  id: string;
+  userId: string;
+  name: string;
+  sourceType: 'document' | 'database';
+  isQueryable: boolean;
+  status: 'pending' | 'ready' | 'metadata_extracted' | 'error';
+  documentId?: string;
+  connectionId?: string;
+  tableName?: string;
+  sqlViewQuery?: string;
+  metadataJson?: string;
+  delimiter?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ==================== Query Types ====================
 export interface Query {
   id: string;
@@ -252,6 +308,9 @@ export interface Query {
   sources?: string[];
   confidence?: number;
   metadata?: Record<string, any>;
+  sql?: string;
+  sqlExplanation?: string;
+  sqlResults?: Record<string, any>[];
   createdAt: string;
 }
 

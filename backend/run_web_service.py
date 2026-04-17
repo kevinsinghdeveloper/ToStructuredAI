@@ -33,6 +33,8 @@ from controllers.pipelines.PipelineController import PipelineController
 from controllers.queries.QueryController import QueryController
 from controllers.outputs.OutputController import OutputController
 from controllers.pipeline_types.PipelineTypeController import PipelineTypeController
+from controllers.connections.ConnectionController import ConnectionController
+from controllers.sources.SourceController import SourceController
 
 # Resource Managers — kept from zerve-app
 from managers.auth.AuthResourceManager import AuthResourceManager
@@ -48,6 +50,8 @@ from managers.pipelines.PipelineResourceManager import PipelineResourceManager
 from managers.queries.QueryResourceManager import QueryResourceManager
 from managers.outputs.OutputResourceManager import OutputResourceManager
 from managers.pipeline_types.PipelineTypeResourceManager import PipelineTypeResourceManager
+from managers.connections.ConnectionResourceManager import ConnectionResourceManager
+from managers.sources.SourceResourceManager import SourceResourceManager
 
 # Services
 from services.email.EmailService import EmailService
@@ -227,6 +231,14 @@ def create_app() -> Flask:
     # Pipeline Types
     pipeline_type_manager = PipelineTypeResourceManager(service_managers=service_managers)
     register_controller(app, PipelineTypeController, pipeline_type_manager)
+
+    # Database Connections
+    connection_manager = ConnectionResourceManager(service_managers=service_managers)
+    register_controller(app, ConnectionController, connection_manager)
+
+    # Sources
+    source_manager = SourceResourceManager(service_managers=service_managers)
+    register_controller(app, SourceController, source_manager)
 
     # ----- Health Check -----
     @app.route("/api/health", methods=["GET"])

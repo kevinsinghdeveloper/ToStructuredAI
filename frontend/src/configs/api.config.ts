@@ -76,6 +76,28 @@ export const API_ENDPOINTS = {
     DELETE: '/api/queries/:id',
   },
 
+  // Database Connections
+  CONNECTIONS: {
+    GET_ALL: '/api/connections',
+    GET_BY_ID: '/api/connections/:id',
+    CREATE: '/api/connections',
+    UPDATE: '/api/connections/:id',
+    DELETE: '/api/connections/:id',
+    TEST: '/api/connections/:id/test',
+    GET_TABLES: '/api/connections/:id/tables',
+    GET_TABLE_SCHEMA: '/api/connections/:id/tables/:tableName/schema',
+    CREATE_SOURCE: '/api/connections/:id/tables/:tableName/create-source',
+  },
+
+  // Sources
+  SOURCES: {
+    GET_ALL: '/api/sources',
+    GET_BY_ID: '/api/sources/:id',
+    CREATE: '/api/sources',
+    UPDATE: '/api/sources/:id',
+    DELETE: '/api/sources/:id',
+  },
+
   // Billing
   BILLING: {
     GET_PLANS: '/api/billing/plans',

@@ -315,6 +315,78 @@ class ApiService {
     return response.data;
   }
 
+  // ==================== Database Connections ====================
+  async getConnections() {
+    const response = await this.api.get('/api/connections');
+    return response.data;
+  }
+
+  async getConnection(id: string) {
+    const response = await this.api.get(`/api/connections/${id}`);
+    return response.data;
+  }
+
+  async createConnection(data: Record<string, any>) {
+    const response = await this.api.post('/api/connections', data);
+    return response.data;
+  }
+
+  async updateConnection(id: string, data: Record<string, any>) {
+    const response = await this.api.put(`/api/connections/${id}`, data);
+    return response.data;
+  }
+
+  async deleteConnection(id: string) {
+    const response = await this.api.delete(`/api/connections/${id}`);
+    return response.data;
+  }
+
+  async testConnection(id: string) {
+    const response = await this.api.post(`/api/connections/${id}/test`);
+    return response.data;
+  }
+
+  async getConnectionTables(id: string) {
+    const response = await this.api.get(`/api/connections/${id}/tables`);
+    return response.data;
+  }
+
+  async getConnectionTableSchema(connectionId: string, tableName: string) {
+    const response = await this.api.get(`/api/connections/${connectionId}/tables/${tableName}/schema`);
+    return response.data;
+  }
+
+  async createSourceFromTable(connectionId: string, tableName: string, data?: Record<string, any>) {
+    const response = await this.api.post(`/api/connections/${connectionId}/tables/${tableName}/create-source`, data || {});
+    return response.data;
+  }
+
+  // ==================== Sources ====================
+  async getSources() {
+    const response = await this.api.get('/api/sources');
+    return response.data;
+  }
+
+  async getSource(id: string) {
+    const response = await this.api.get(`/api/sources/${id}`);
+    return response.data;
+  }
+
+  async createSource(data: Record<string, any>) {
+    const response = await this.api.post('/api/sources', data);
+    return response.data;
+  }
+
+  async updateSource(id: string, data: Record<string, any>) {
+    const response = await this.api.put(`/api/sources/${id}`, data);
+    return response.data;
+  }
+
+  async deleteSource(id: string) {
+    const response = await this.api.delete(`/api/sources/${id}`);
+    return response.data;
+  }
+
   // ==================== Billing ====================
   async getPlans() {
     const response = await this.api.get('/api/billing/plans');

@@ -7,6 +7,7 @@ from abstractions.models.RequestResourceModel import RequestResourceModel
 from abstractions.models.ResponseModel import ResponseModel
 from database.schemas.pipeline import PipelineItem
 from database.schemas.pipeline_document import PipelineDocumentItem
+from database.schemas.pipeline_source import PipelineSourceItem
 from database.schemas.output import OutputItem
 from services.pipeline_types.PipelineTypeService import PipelineTypeService
 
@@ -28,13 +29,17 @@ class PipelineResourceManager(IResourceManager):
                 if not p:
                     return ResponseModel(success=False, error="Pipeline not found", status_code=404)
                 doc_ids = self._get_document_ids(pipeline_id)
-                return ResponseModel(success=True, data=PipelineItem.from_item(p).to_api_dict(doc_ids), status_code=200)
+                api_dict = PipelineItem.from_item(p).to_api_dict(doc_ids)
+                api_dict["sourceIds"] = self._get_source_ids(pipeline_id)
+                return ResponseModel(success=True, data=api_dict, status_code=200)
 
             pipelines = self._db.pipelines.find_by_user(user_id)
             result = []
             for p in pipelines:
                 doc_ids = self._get_document_ids(p["id"])
-                result.append(PipelineItem.from_item(p).to_api_dict(doc_ids))
+                api_dict = PipelineItem.from_item(p).to_api_dict(doc_ids)
+                api_dict["sourceIds"] = self._get_source_ids(p["id"])
+                result.append(api_dict)
             return ResponseModel(success=True, data=result, status_code=200)
         except Exception as e:
             return ResponseModel(success=False, error=f"Failed to retrieve pipelines: {e}", status_code=500)
@@ -46,17 +51,22 @@ class PipelineResourceManager(IResourceManager):
 
             name = data.get("name")
             model_id = data.get("modelId") or data.get("model_id")
-            embedding_model_id = data.get("embeddingModelId") or data.get("embedding_model_id")
+            embedding_model_id = data.get("embeddingModelId") or data.get("embedding_model_id", "")
             document_ids = data.get("documentIds") or data.get("document_ids", [])
+            source_ids = data.get("sourceIds") or data.get("source_ids", [])
+            pipeline_type = data.get("pipelineType") or data.get("pipeline_type")
 
             if not name:
                 return ResponseModel(success=False, error="Pipeline name is required", status_code=400)
             if not model_id:
                 return ResponseModel(success=False, error="Model ID is required", status_code=400)
-            if not embedding_model_id:
+
+            # data_analyzer pipelines don't require embedding model
+            pt_config = self._pipeline_type_service.get_pipeline_type(pipeline_type) if pipeline_type else None
+            requires_embedding = pt_config.get("requires_embedding", True) if pt_config else True
+            if requires_embedding and not embedding_model_id:
                 return ResponseModel(success=False, error="Embedding model ID is required", status_code=400)
 
-            pipeline_type = data.get("pipelineType") or data.get("pipeline_type")
             config = {}
             field_values = data.get("fieldValues") or data.get("field_values", {})
             if field_values:
@@ -78,7 +88,14 @@ class PipelineResourceManager(IResourceManager):
                 link = PipelineDocumentItem(pipeline_id=pipeline.id, document_id=doc_id)
                 self._db.pipeline_documents.create(link.to_item())
 
-            return ResponseModel(success=True, data=pipeline.to_api_dict(document_ids), status_code=201)
+            # Link sources
+            for source_id in source_ids:
+                link = PipelineSourceItem(pipeline_id=pipeline.id, source_id=source_id)
+                self._db.pipeline_sources.create(link.to_item())
+
+            api_dict = pipeline.to_api_dict(document_ids)
+            api_dict["sourceIds"] = source_ids
+            return ResponseModel(success=True, data=api_dict, status_code=201)
         except Exception as e:
             return ResponseModel(success=False, error=f"Failed to create pipeline: {e}", status_code=500)
 
@@ -109,10 +126,21 @@ class PipelineResourceManager(IResourceManager):
                 for doc_id in new_doc_ids:
                     self._db.pipeline_documents.create(PipelineDocumentItem(pipeline_id=pipeline_id, document_id=doc_id).to_item())
 
+            # Update source links if provided
+            new_source_ids = data.get("sourceIds") or data.get("source_ids")
+            if new_source_ids is not None:
+                old_source_links = self._db.pipeline_sources.find_by_pipeline(pipeline_id)
+                for link in old_source_links:
+                    self._db.pipeline_sources.delete_by_key({"pipeline_id": pipeline_id, "source_id": link["source_id"]})
+                for source_id in new_source_ids:
+                    self._db.pipeline_sources.create(PipelineSourceItem(pipeline_id=pipeline_id, source_id=source_id).to_item())
+
             self._db.pipelines.update(pipeline_id, updates)
             updated = self._db.pipelines.get_by_key({"user_id": user_id, "id": pipeline_id})
             doc_ids = self._get_document_ids(pipeline_id)
-            return ResponseModel(success=True, data=PipelineItem.from_item(updated).to_api_dict(doc_ids), status_code=200)
+            api_dict = PipelineItem.from_item(updated).to_api_dict(doc_ids)
+            api_dict["sourceIds"] = self._get_source_ids(pipeline_id)
+            return ResponseModel(success=True, data=api_dict, status_code=200)
         except Exception as e:
             return ResponseModel(success=False, error=f"Failed to update pipeline: {e}", status_code=500)
 
@@ -131,6 +159,10 @@ class PipelineResourceManager(IResourceManager):
             links = self._db.pipeline_documents.find_by("pipeline_id", pipeline_id)
             for link in links:
                 self._db.pipeline_documents.delete_by_key({"pipeline_id": pipeline_id, "document_id": link["document_id"]})
+
+            source_links = self._db.pipeline_sources.find_by_pipeline(pipeline_id)
+            for link in source_links:
+                self._db.pipeline_sources.delete_by_key({"pipeline_id": pipeline_id, "source_id": link["source_id"]})
 
             self._db.outputs.delete_where("pipeline_id", pipeline_id)
             self._db.queries.delete_where("pipeline_id", pipeline_id)
@@ -213,3 +245,7 @@ class PipelineResourceManager(IResourceManager):
     def _get_document_ids(self, pipeline_id: str) -> list:
         links = self._db.pipeline_documents.find_by("pipeline_id", pipeline_id)
         return [link["document_id"] for link in links]
+
+    def _get_source_ids(self, pipeline_id: str) -> list:
+        links = self._db.pipeline_sources.find_by_pipeline(pipeline_id)
+        return [link["source_id"] for link in links]

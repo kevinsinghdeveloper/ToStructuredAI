@@ -16,6 +16,10 @@ from database.repositories.pipeline_repository import PipelineRepository
 from database.repositories.output_repository import OutputRepository
 from database.repositories.query_repository import QueryRepository
 from database.repositories.config_repository import ConfigRepository
+from database.repositories.connection_repository import ConnectionRepository
+from database.repositories.source_repository import SourceRepository
+from database.repositories.pipeline_source_repository import PipelineSourceRepository
+from database.repositories.temp_data_table_repository import TempDataTableRepository
 
 
 class DatabaseService(IServiceManagerBase):
@@ -41,6 +45,11 @@ class DatabaseService(IServiceManagerBase):
         self.queries = None
         self.usage_tracking = None
         self.plan_models = None
+        # External database connections & sources
+        self.connections = None
+        self.sources = None
+        self.pipeline_sources = None
+        self.temp_data_tables = None
 
     def initialize(self):
         if self._db_type == "dynamodb":
@@ -75,6 +84,12 @@ class DatabaseService(IServiceManagerBase):
         self.usage_tracking = connector.get_repository("usage_tracking", pk_field="user_id")
         self.plan_models = connector.get_repository("plan_models", pk_field="plan_id")
 
+        # External database connections & sources
+        self.connections = ConnectionRepository(connector.get_repository("database_connections", pk_field="user_id"))
+        self.sources = SourceRepository(connector.get_repository("sources", pk_field="user_id"))
+        self.pipeline_sources = PipelineSourceRepository(connector.get_repository("pipeline_sources", pk_field="pipeline_id"))
+        self.temp_data_tables = TempDataTableRepository(connector.get_repository("temp_data_tables", pk_field="pipeline_id"))
+
     def _init_postgres(self):
         from database.repositories.connectors.SQLAlchemyConnector import SQLAlchemyConnector
 
@@ -99,3 +114,9 @@ class DatabaseService(IServiceManagerBase):
         self.pipeline_documents = connector.get_repository("pipeline_documents", pk_field="pipeline_id")
         self.usage_tracking = connector.get_repository("usage_tracking", pk_field="user_id")
         self.plan_models = connector.get_repository("plan_models", pk_field="plan_id")
+
+        # External database connections & sources
+        self.connections = ConnectionRepository(connector.get_repository("database_connections"))
+        self.sources = SourceRepository(connector.get_repository("sources"))
+        self.pipeline_sources = PipelineSourceRepository(connector.get_repository("pipeline_sources", pk_field="pipeline_id"))
+        self.temp_data_tables = TempDataTableRepository(connector.get_repository("temp_data_tables", pk_field="pipeline_id"))

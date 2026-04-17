@@ -24,6 +24,10 @@ from database.schemas.output import OutputItem
 from database.schemas.query import QueryItem
 from database.schemas.usage_tracking import UsageTrackingItem
 from database.schemas.plan_model import PlanModelItem
+from database.schemas.database_connection import DatabaseConnectionItem
+from database.schemas.source import SourceItem
+from database.schemas.pipeline_source import PipelineSourceItem
+from database.schemas.temp_data_table import TempDataTableItem
 
 
 @dataclass
@@ -154,5 +158,34 @@ ENTITIES = {
         schema=PlanModelItem,
         dynamo_suffix="plan-models",
         pk=["plan_id", "model_id"],
+    ),
+    # External database connections & sources
+    "database_connections": Entity(
+        schema=DatabaseConnectionItem,
+        dynamo_suffix="database-connections",
+        pk=["user_id", "id"],
+        indexes=["db_type", "status"],
+        text_fields=["encrypted_password"],
+        non_nullable=["user_id", "name", "db_type"],
+    ),
+    "sources": Entity(
+        schema=SourceItem,
+        dynamo_suffix="sources",
+        pk=["user_id", "id"],
+        indexes=["source_type", "connection_id"],
+        text_fields=["metadata_json", "sql_view_query"],
+        non_nullable=["user_id", "name"],
+    ),
+    "pipeline_sources": Entity(
+        schema=PipelineSourceItem,
+        dynamo_suffix="pipeline-sources",
+        pk=["pipeline_id", "source_id"],
+    ),
+    "temp_data_tables": Entity(
+        schema=TempDataTableItem,
+        dynamo_suffix="temp-data-tables",
+        pk=["pipeline_id", "id"],
+        indexes=["source_id"],
+        text_fields=["schema_json"],
     ),
 }
